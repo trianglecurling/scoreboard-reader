@@ -1,2 +1,2 @@
 # scoreboard-reader
-CV software to analyse a curling scoreboard
+CV software to analyze a curling scoreboard
