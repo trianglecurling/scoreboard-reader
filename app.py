@@ -36,7 +36,7 @@ minval_yellow, maxval_yellow, minloc_yellow, maxloc_yellow = cv2.minMaxLoc(
 
 # Draw circles around the best match points
 cv2.circle(apply_red, maxloc_red, 15, 255, 2)
-cv2.circle(apply_yellow, maxloc_red, 15, 255, 2)
+cv2.circle(apply_yellow, maxloc_yellow, 15, 255, 2)
 
 cv2.imshow("color", color)
 cv2.imshow("redtemplateapply", apply_red)
