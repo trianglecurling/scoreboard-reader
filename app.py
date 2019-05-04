@@ -4,6 +4,9 @@ import os
 import cv2
 import numpy as np
 
+from PIL import Image
+import pytesseract
+
 # There's probably a better way...
 
 
@@ -67,7 +70,7 @@ samples_path_c = os.path.join(samples_path, "c")
 samples_path_d = os.path.join(samples_path, "d")
 
 # This one looks "nice"
-sample_image_name = "100246.jpg"
+sample_image_name = "100119.jpg"  # 100246.jpg is also a good one with fewer cards
 sample_image_path = os.path.join(samples_path_d, sample_image_name)
 
 # Templates
@@ -77,7 +80,7 @@ bl = "template-bl.jpg"
 br = "template-br.jpg"
 
 offset_tl = (16, 11)
-offset_tr = (37, 13)
+offset_tr = (37, 14)
 offset_bl = (14, 22)
 offset_br = (32, 9)
 
@@ -156,14 +159,31 @@ for i in range(13):
 # Extract ROIs
 red_cells = []
 yellow_cells = []
+gray = cv2.cvtColor(corrected, cv2.COLOR_RGB2GRAY)
+ret, thresh = cv2.threshold(gray, 90, 255, cv2.THRESH_BINARY)
 for i in range(12):
     left_with_extra_room = offset_left + round(cell_width * i) - 4
     right_with_extra_room = left_with_extra_room + round(cell_width) + 8
-    red_cells.append(corrected[0:red_divider_y, left_with_extra_room:right_with_extra_room])
-    yellow_cells.append(corrected[yellow_divider_y:, left_with_extra_room:right_with_extra_room])
+    red_cells.append(thresh[0:red_divider_y, left_with_extra_room:right_with_extra_room])
+    yellow_cells.append(thresh[yellow_divider_y:, left_with_extra_room:right_with_extra_room])
 
 cv2.imshow("color", color)
 cv2.imshow("corrected", corrected)
+
+for x, i in enumerate(red_cells):
+    print("Red " + str(x + 1) + ": " + pytesseract.image_to_string(i, config="-c tessedit"
+                                                                   "_char_whitelist=0123456789 "
+                                                                   " --psm 10"
+                                                                   " -l osd"
+                                                                   " "))
+    cv2.imshow("Red " + str(x), i)
+for x, i in enumerate(yellow_cells):
+    print("Yellow " + str(x + 1) + ": " + pytesseract.image_to_string(i, config="-c tessedit"
+                                                                      "_char_whitelist=0123456789 "
+                                                                      " --psm 10"
+                                                                      " -l osd"
+                                                                      " "))
+    cv2.imshow("Yellow " + str(x), i)
 
 # cv2.imshow("tlapply", apply_tl)
 # cv2.imshow("trapply", apply_tr)
