@@ -138,9 +138,33 @@ cv2.line(color, sbpos_br, sbpos_bl, (255, 0, 0), 2)
 cv2.line(color, sbpos_bl, sbpos_tl, (255, 0, 0), 2)
 
 corrected = four_point_transform(orig, np.array([sbpos_tl, sbpos_tr, sbpos_bl, sbpos_br], dtype="float32"))
+visualizer = corrected.copy()
+
+# Horizontal lines
+red_divider_y = round(visualizer.shape[0] / 3)
+yellow_divider_y = red_divider_y * 2
+cv2.line(visualizer, (0, red_divider_y), (visualizer.shape[1], red_divider_y), (0, 0, 255), 1)
+cv2.line(visualizer, (0, yellow_divider_y), (visualizer.shape[1], yellow_divider_y), (0, 255, 255), 1)
+
+# Vertical lines
+offset_left = 30
+cell_width = 15.85
+for i in range(13):
+    left = offset_left + round(cell_width * i)
+    cv2.line(visualizer, (left, 0), (left, visualizer.shape[0]), 0, 1)
+
+# Extract ROIs
+red_cells = []
+yellow_cells = []
+for i in range(12):
+    left_with_extra_room = offset_left + round(cell_width * i) - 4
+    right_with_extra_room = left_with_extra_room + round(cell_width) + 8
+    red_cells.append(corrected[0:red_divider_y, left_with_extra_room:right_with_extra_room])
+    yellow_cells.append(corrected[yellow_divider_y:, left_with_extra_room:right_with_extra_room])
 
 cv2.imshow("color", color)
 cv2.imshow("corrected", corrected)
+
 # cv2.imshow("tlapply", apply_tl)
 # cv2.imshow("trapply", apply_tr)
 # cv2.imshow("blapply", apply_bl)
