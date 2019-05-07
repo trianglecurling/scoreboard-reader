@@ -62,6 +62,28 @@ def four_point_transform(image, pts):
     return warped
 
 
+def clean_roi(roi):
+    # 1. Get contours
+    contours, hierarchy = cv2.findContours(roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # 2. Fill any blobs that touch the boundaries of the ROI
+    mask = np.ones(roi.shape[:2], dtype="uint8") * 255
+    for contour in contours:
+        for pair in contour:
+            if (pair[0][0] == 0 or pair[0][1] == 0):
+                cv2.drawContours(mask, [contour], -1, 0, -1)
+                break
+    cleaned = cv2.bitwise_or(roi, mask)
+
+    # 3. Delete any sufficiently small blobs
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if (area < 10):
+            cv2.drawContours(mask, [contour], -1, 0, -1)
+
+    return cleaned
+
+
 # Paths
 samples_path = "./samples/"
 samples_path_a = os.path.join(samples_path, "a")
@@ -156,6 +178,11 @@ for i in range(13):
     left = offset_left + round(cell_width * i)
     cv2.line(visualizer, (left, 0), (left, visualizer.shape[0]), 0, 1)
 
+
+def get_config(next_expected_char):
+    return "-c tessedit_char_whitelist=12345678 --psm 10 -l osd"
+
+
 # Extract ROIs
 red_cells = []
 yellow_cells = []
@@ -164,26 +191,26 @@ ret, thresh = cv2.threshold(gray, 90, 255, cv2.THRESH_BINARY)
 for i in range(12):
     left_with_extra_room = offset_left + round(cell_width * i) - 4
     right_with_extra_room = left_with_extra_room + round(cell_width) + 8
-    red_cells.append(thresh[0:red_divider_y, left_with_extra_room:right_with_extra_room])
-    yellow_cells.append(thresh[yellow_divider_y:, left_with_extra_room:right_with_extra_room])
+    red_roi = thresh[0:red_divider_y, left_with_extra_room:right_with_extra_room]
+    yellow_roi = thresh[yellow_divider_y:, left_with_extra_room:right_with_extra_room]
+    red_cells.append(clean_roi(red_roi))
+    yellow_cells.append(clean_roi(yellow_roi))
 
 cv2.imshow("color", color)
 cv2.imshow("corrected", corrected)
 
-for x, i in enumerate(red_cells):
-    print("Red " + str(x + 1) + ": " + pytesseract.image_to_string(i, config="-c tessedit"
-                                                                   "_char_whitelist=0123456789 "
-                                                                   " --psm 10"
-                                                                   " -l osd"
-                                                                   " "))
-    cv2.imshow("Red " + str(x), i)
-for x, i in enumerate(yellow_cells):
-    print("Yellow " + str(x + 1) + ": " + pytesseract.image_to_string(i, config="-c tessedit"
-                                                                      "_char_whitelist=0123456789 "
-                                                                      " --psm 10"
-                                                                      " -l osd"
-                                                                      " "))
-    cv2.imshow("Yellow " + str(x), i)
+next_expected_number = 1
+for i in range(len(red_cells) * 2):
+    index = int(i / 2)
+    next_is_red = i % 2 == 0
+    next_cell = red_cells[index] if next_is_red else yellow_cells[index]
+    config = get_config(str(next_expected_number))
+    ocr_guess = pytesseract.image_to_string(next_cell, config=config)
+
+    if ocr_guess == str(next_expected_number):
+        next_expected_number += 1
+
+    print("Index: %s, Color: %s, guess: %s" % (index, "red" if next_is_red else "yellow", ocr_guess))
 
 # cv2.imshow("tlapply", apply_tl)
 # cv2.imshow("trapply", apply_tr)
