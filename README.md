@@ -36,8 +36,6 @@ And these are **invalid** assumptions:
 
 ![Sample scoreboards](meta/scoreboard-samples.png)
 
-[Sample scoreboard images](https://drive.google.com/open?id=1OwWMjiAvWT7gaOG3-WHLXb3u8bc8al1l)
-
 ## CV Solution
 
 Here is an outline of tasks implemented by this software.
@@ -50,7 +48,9 @@ Example of a still image captured by the the camera (note: this is a contrived e
 
 ![B-scoreboard](meta/scoreboard-c.png)
 
-Also have a look at [Scoreboard B](./meta/scoreboard-b). I may be able to adjust the focus on the camera to improve the image quality of the Scoreboard C camera.
+Also have a look at [Scoreboard B](./meta/scoreboard-b.png). I may be able to adjust the focus on the camera to improve the image quality of the Scoreboard C camera.
+
+For a few hundred real scoreboard examples, see [Sample scoreboard images](https://drive.google.com/open?id=1OwWMjiAvWT7gaOG3-WHLXb3u8bc8al1l) in Google Drive.
 
 ### Identify and crop the scoreboard
 
@@ -66,13 +66,13 @@ Example of a cropped and transformed scoreboard:
 
 Assuming the scoreboard is divided into even regions, it is easy to identify the 12 cells for the red team's end cards and the 12 cells for the yellow team's end cards.
 
-### OCR each ROI
-
-Process each ROI with optical character recognition (OCR) to determine: a) whether or not an end card is hung in the space, and b) the number displayed on the card, if it exists. Use the Valid Assumptions listed above if necessary to improve recognition accuracy.
-
 ROI Divisions:
 
 ![ROI Divisions](./meta/roi-divisions.png)
+
+### OCR each ROI
+
+Process each ROI with optical character recognition (OCR) to determine: a) whether or not an end card is hung in the space, and b) the number displayed on the card, if it exists. Use the Valid Assumptions listed above if necessary to improve recognition accuracy.
 
 There is also the possibility that the card is occluded by a subject in the camera image. In this case, unknown should be reported.
 
@@ -88,9 +88,10 @@ Once all 24 ROIs are processed, return two Lists representing the values in each
 ```
 
 Where the values in each `<List of strings>` can be:
-`"BLANK"` - indicates there is no card in the cell
-`"UNKNOWN"` - unable to determine the value (e.g. it is occluded)
-`"1" - "11"` - the value of the end card that is hung
+
+- `"BLANK"` - indicates there is no card in the cell
+- `"1"` - `"11"` - the value of the end card that is hung
+- `"UNKNOWN"` - unable to determine the value (e.g. it is occluded)
 
 ### Record changes to a database
 
