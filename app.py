@@ -4,12 +4,6 @@ import os
 import cv2
 import numpy as np
 
-from PIL import Image
-import pytesseract
-
-# There's probably a better way...
-
-
 def addTuples(a, b):
     if len(a) != len(b):
         raise ValueError("a and b must be the same length")
@@ -21,8 +15,6 @@ def addTuples(a, b):
     return tuple(result)
 
 # From https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
-
-
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
 
@@ -35,7 +27,6 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)]
 
     return rect
-
 
 # From https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 def four_point_transform(image, pts):
@@ -61,29 +52,6 @@ def four_point_transform(image, pts):
 
     return warped
 
-
-def clean_roi(roi):
-    # 1. Get contours
-    contours, hierarchy = cv2.findContours(roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    # 2. Fill any blobs that touch the boundaries of the ROI
-    mask = np.ones(roi.shape[:2], dtype="uint8") * 255
-    for contour in contours:
-        for pair in contour:
-            if (pair[0][0] == 0 or pair[0][1] == 0):
-                cv2.drawContours(mask, [contour], -1, 0, -1)
-                break
-    cleaned = cv2.bitwise_or(roi, mask)
-
-    # 3. Delete any sufficiently small blobs
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if (area < 10):
-            cv2.drawContours(mask, [contour], -1, 0, -1)
-
-    return cleaned
-
-
 # Paths
 samples_path = "./samples/"
 samples_path_a = os.path.join(samples_path, "a")
@@ -96,10 +64,10 @@ sample_image_name = "100119.jpg"  # 100246.jpg is also a good one with fewer car
 sample_image_path = os.path.join(samples_path_d, sample_image_name)
 
 # Templates
-tl = "template-tl.jpg"
-tr = "template-tr.jpg"
-bl = "template-bl.jpg"
-br = "template-br.jpg"
+tl = "templates/scoreboard-tl.jpg"
+tr = "templates/scoreboard-tr.jpg"
+bl = "templates/scoreboard-bl.jpg"
+br = "templates/scoreboard-br.jpg"
 
 offset_tl = (16, 11)
 offset_tr = (37, 14)
@@ -109,8 +77,6 @@ offset_br = (32, 9)
 # Load images
 color = cv2.imread(sample_image_path, cv2.IMREAD_COLOR)
 orig = color.copy()
-# gray = cv2.cvtColor(color, cv2.COLOR_RGB2GRAY)
-# hsv = cv2.cvtColor(color, cv2.COLOR_RGB2HSV)
 
 # Load templates
 template_tl = cv2.imread(tl, cv2.IMREAD_COLOR)
@@ -133,28 +99,10 @@ minval_tr, maxval_tr, minloc_tr, maxloc_tr = cv2.minMaxLoc(apply_tr)
 minval_bl, maxval_bl, minloc_bl, maxloc_bl = cv2.minMaxLoc(apply_bl)
 minval_br, maxval_br, minloc_br, maxloc_br = cv2.minMaxLoc(apply_br)
 
-# Draw circles around the best match points
-# cv2.circle(apply_tl, maxloc_tl, 15, 255, 2)
-# cv2.circle(apply_tr, maxloc_tr, 15, 255, 2)
-# cv2.circle(apply_bl, maxloc_bl, 15, 255, 2)
-# cv2.circle(apply_br, maxloc_br, 15, 255, 2)
-
 sbpos_tl = addTuples(maxloc_tl, offset_tl)
 sbpos_tr = addTuples(maxloc_tr, offset_tr)
 sbpos_bl = addTuples(maxloc_bl, offset_bl)
 sbpos_br = addTuples(maxloc_br, offset_br)
-
-# Visualize scoreboard corners with rectangles
-# rect_size = 10
-# rectpos_tl = addTuples(sbpos_tl, (0, 0))
-# rectpos_tr = addTuples(sbpos_tr, (-rect_size, 0))
-# rectpos_bl = addTuples(sbpos_bl, (0, -rect_size))
-# rectpos_br = addTuples(sbpos_br, (-rect_size, -rect_size))
-
-# cv2.rectangle(color, rectpos_tl, addTuples(rectpos_tl, (rect_size, rect_size)), (255, 0, 0), 2, 8, 0)
-# cv2.rectangle(color, rectpos_tr, addTuples(rectpos_tr, (rect_size, rect_size)), (255, 0, 0), 2, 8, 0)
-# cv2.rectangle(color, rectpos_bl, addTuples(rectpos_bl, (rect_size, rect_size)), (255, 0, 0), 2, 8, 0)
-# cv2.rectangle(color, rectpos_br, addTuples(rectpos_br, (rect_size, rect_size)), (255, 0, 0), 2, 8, 0)
 
 # Draw 4 lines to outline the scoreboard
 cv2.line(color, sbpos_tl, sbpos_tr, (255, 0, 0), 2)
@@ -168,69 +116,27 @@ visualizer = corrected.copy()
 # Horizontal lines
 red_divider_y = round(visualizer.shape[0] / 3)
 yellow_divider_y = red_divider_y * 2
-cv2.line(visualizer, (0, red_divider_y), (visualizer.shape[1], red_divider_y), (0, 0, 255), 1)
-cv2.line(visualizer, (0, yellow_divider_y), (visualizer.shape[1], yellow_divider_y), (0, 255, 255), 1)
 
 # Vertical lines
 offset_left = 30
 cell_width = 15.85
-for i in range(13):
-    left = offset_left + round(cell_width * i)
-    cv2.line(visualizer, (left, 0), (left, visualizer.shape[0]), 0, 1)
-
-
-def get_config(next_expected_char):
-    return "-c tessedit_char_whitelist=12345678 --psm 10 -l osd"
-
 
 # Extract ROIs
 red_cells = []
 yellow_cells = []
-gray = cv2.cvtColor(corrected, cv2.COLOR_RGB2GRAY)
-ret, thresh = cv2.threshold(gray, 90, 255, cv2.THRESH_BINARY)
 for i in range(12):
-    left_with_extra_room = offset_left + round(cell_width * i) - 4
-    right_with_extra_room = left_with_extra_room + round(cell_width) + 8
-    red_roi = thresh[0:red_divider_y, left_with_extra_room:right_with_extra_room]
-    yellow_roi = thresh[yellow_divider_y:, left_with_extra_room:right_with_extra_room]
-    red_cells.append(clean_roi(red_roi))
-    yellow_cells.append(clean_roi(yellow_roi))
+    left_with_extra_room = offset_left + round(cell_width * i) - 0
+    right_with_extra_room = left_with_extra_room + round(cell_width) + 4
+    red_roi = corrected[0:red_divider_y, left_with_extra_room:right_with_extra_room]
+    yellow_roi = corrected[yellow_divider_y:, left_with_extra_room:right_with_extra_room]
+    red_cells.append(red_roi)
+    yellow_cells.append(yellow_roi)
+
+# OCR red_cells and yellow_cells
+
 
 cv2.imshow("color", color)
 cv2.imshow("corrected", corrected)
 
-next_expected_number = 1
-for i in range(len(red_cells) * 2):
-    index = int(i / 2)
-    next_is_red = i % 2 == 0
-    next_cell = red_cells[index] if next_is_red else yellow_cells[index]
-    config = get_config(str(next_expected_number))
-    ocr_guess = pytesseract.image_to_string(next_cell, config=config)
-
-    if ocr_guess == str(next_expected_number):
-        next_expected_number += 1
-
-    print("Index: %s, Color: %s, guess: %s" % (index, "red" if next_is_red else "yellow", ocr_guess))
-
-# cv2.imshow("tlapply", apply_tl)
-# cv2.imshow("trapply", apply_tr)
-# cv2.imshow("blapply", apply_bl)
-# cv2.imshow("brapply", apply_br)
-
-print("color.shape: ", color.shape)
-print("template_tl.shape: ", template_tl.shape)
-print("template_tr.shape: ", template_tr.shape)
-print("template_bl.shape: ", template_bl.shape)
-print("template_br.shape: ", template_br.shape)
-
-print("maxloc_tl: ", maxloc_tl)
-print("maxloc_tr: ", maxloc_tr)
-print("maxloc_bl: ", maxloc_bl)
-print("maxloc_br: ", maxloc_br)
-
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-
-# Other stuff
-# ret, thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
