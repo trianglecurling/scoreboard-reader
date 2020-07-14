@@ -96,7 +96,10 @@ samples_path_c = os.path.join(samples_path, "c")
 samples_path_d = os.path.join(samples_path, "d")
 
 # This one looks "nice"
-sample_image_name = "100119.jpg"  # 100246.jpg is also a good one with fewer cards
+# sample_image_name = "100119.jpg"  # 100246.jpg is also a good one with fewer cards
+# sample_image_path = os.path.join(samples_path_d, sample_image_name)
+
+sample_image_name = "100026.jpg"  # 100246.jpg is also a good one with fewer cards
 sample_image_path = os.path.join(samples_path_d, sample_image_name)
 
 # Templates
@@ -131,6 +134,8 @@ apply_tl = cv2.matchTemplate(color, template_tl, cv2.TM_CCOEFF_NORMED)
 apply_tr = cv2.matchTemplate(color, template_tr, cv2.TM_CCOEFF_NORMED)
 apply_bl = cv2.matchTemplate(color, template_bl, cv2.TM_CCOEFF_NORMED)
 apply_br = cv2.matchTemplate(color, template_br, cv2.TM_CCOEFF_NORMED)
+
+cv2.imshow("tl", apply_tl)
 
 minval_tl, maxval_tl, minloc_tl, maxloc_tl = cv2.minMaxLoc(apply_tl)
 minval_tr, maxval_tr, minloc_tr, maxloc_tr = cv2.minMaxLoc(apply_tr)

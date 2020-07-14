@@ -3,6 +3,9 @@
 import os
 import cv2
 import numpy as np
+import pytesseract as tess
+from PIL import Image
+# tess.pytesseract.tesseract_cmd = r'C:\Tesseract-OCR\tesseract.exe'
 
 def addTuples(a, b):
     if len(a) != len(b):
@@ -52,6 +55,26 @@ def four_point_transform(image, pts):
 
     return warped
 
+def getNumber(image):
+
+    img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY())
+
+    # Otsu Tresholding automatically find best threshold value
+    _, binary_image = cv2.threshold('gray', 0, 255, cv2.THRESH_OTSU)
+
+    # invert the image if the text is white and background is black
+    count_white = np.sum(binary_image > 0)
+    count_black = np.sum(binary_image == 0)
+    if count_black > count_white:
+        binary_image = 255 - binary_image
+
+    # padding
+    final_image = cv2.copyMakeBorder(image, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+
+    txt = tess.image_to_string(
+        final_image, config='--psm 13 --oem 3 -c tessedit_char_whitelist=0123456789')
+
+    return txt
 # Paths
 samples_path = "./samples/"
 samples_path_a = os.path.join(samples_path, "a")
@@ -131,12 +154,64 @@ for i in range(12):
     yellow_roi = corrected[yellow_divider_y:, left_with_extra_room:right_with_extra_room]
     red_cells.append(red_roi)
     yellow_cells.append(yellow_roi)
-
+    
 # OCR red_cells and yellow_cells
 
+# OCR red_cells and yellow_cells
+text_r = []
+conf = r'--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789'  
+for j in range(12):
+    str_temp=tess.image_to_string(Image.fromarray(red_cells[j], 'RGB'),config=conf)
+    if str.isdigit(str_temp):
+        text_r.append(str_temp)
+    else:
+        text_r.append('-0')
+       
+text_y = []      
+for j in range(12):
+    str_temp=tess.image_to_string(Image.fromarray(yellow_cells[j], 'RGB'),config=conf)
+    if str.isdigit(str_temp):
+        text_y.append(str_temp)
+    else:
+        text_y.append('-0')
 
-cv2.imshow("color", color)
-cv2.imshow("corrected", corrected)
+   
+print(text_r)
+print(text_y)
+ 
+#Assamptions
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+flag = True
+eightCheck = 0
+for j in range(12):
+    if (int(text_r[j])<int(text_r[j+1])):
+        flag=False
+    else:
+        print('Invalid because of order')
+        break
+    if (int(text_y[j])<int(text_y[j+1])):
+        flag=False
+    else:
+        print('Invalid because of order')
+        break  
+   
+    if text_r[j]=='-0':
+        eightCheck=eightCheck+1
+    else:
+        eightCheck=0
+   
+    if text_y[j]=='-0':
+        eightCheck=eightCheck+1
+    else:
+        eightCheck=0
+    if eightCheck>0:
+        print('Invalid because of eight consective gaps')
+        break
+
+
+
+# cv2.imshow("color", color)
+# cv2.imshow("corrected", corrected)
+
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()

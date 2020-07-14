@@ -1,5 +1,6 @@
 # Sample images
 samples/
+training/
 .vscode/
 
 # Byte-compiled / optimized / DLL files
