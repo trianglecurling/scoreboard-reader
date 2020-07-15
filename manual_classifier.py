@@ -5,11 +5,7 @@ import cv2
 import re
 
 training_path = "./training/"
-samples_paths = ["./samples/a", "./samples/b", "./samples/c", "./samples/d"]
-samples_paths = ["./samples/d"]
-files = []
-for samples_path in samples_paths :
-    files.extend([os.path.abspath(os.path.join(samples_path, x)) for x in next(os.walk(samples_path))[2]])
+samples_paths = {"a": "./samples/a", "b": "./samples/b", "c": "./samples/c", "d": "./samples/d"}
 
 training_file_names = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 blank_count = 0
@@ -63,31 +59,38 @@ def get_manual_label(image) :
 # problem children:
 # a/227 226 233 235
 
-for i, filename in enumerate(files) :
-    print("file %s of %s (%s%%) - %s" % (i, len(files), round(i / len(files), 2) * 100, filename))
-    
-    rois = extract_roi.extract_rois(filename)
-    if "error" in rois :
-        print(rois["error"])
-        continue
+for sbid, sbroot in samples_paths.items() :
+    print("sbid: %s, sbroot: %s" % (sbid, sbroot))
+    files = [os.path.abspath(os.path.join(sbroot, x)) for x in next(os.walk(sbroot))[2]]
 
-    red = rois["red"]
-    yellow = rois["yellow"]
-    full = rois["full"]
-    
-    # cv2.imshow(filename, full)
-    # full_key_result = cv2.waitKey(0)
-    # cv2.destroyWindow(filename)
+    for i, filename in enumerate(files) :
+        print("file %s of %s (%s%%) - %s" % (i, len(files), round(i / len(files), 2) * 100, filename))
+        
+        rois = extract_roi.extract_rois(filename, sbid)
+        if "error" in rois :
+            print(rois["error"])
+            continue
 
-    # if (full_key_result == 27) :
-    #     break
+        red = rois["red"]
+        yellow = rois["yellow"]
+        full = rois["full"]
+        
+        # cv2.imshow(filename, full)
+        # full_key_result = cv2.waitKey(0)
+        # cv2.destroyWindow(filename)
 
-    # if (full_key_result == 32) :
-    #     # all are blank, just skip (we will see plenty of blanks elsewhere)
-    #     continue
+        # if (full_key_result == 27) :
+        #     break
 
-    for i in range(12) :
-        ret = get_manual_label(red[i])
-        # backwards and forwards
-    for i in range(12) :
-        ret = get_manual_label(yellow[i])
+        # if (full_key_result == 32) :
+        #     # all are blank, just skip (we will see plenty of blanks elsewhere)
+        #     continue
+
+        break
+
+        for i in range(12) :
+            ret = get_manual_label(red[i])
+            # backwards and forwards
+        for i in range(12) :
+            ret = get_manual_label(yellow[i])
+
